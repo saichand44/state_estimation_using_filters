@@ -34,7 +34,7 @@ class EKF:
         Returns
         -------
         u : numpy array
-        Control input at the timestamp {t} of the format (linear_velocity, angular_velocity)
+            Control input at the timestamp {t} of the format (linear_velocity, angular_velocity)
         '''
         self.next_timestamp = timestamp+1
 
@@ -55,6 +55,11 @@ class EKF:
         y_{k+1} = y_{k} + dt*linear_velocity*sin(yaw_{k})
         yaw_{k+1} = yaw_{k} + dt*angular_velocity
         linear_velocity_{k+1} = linear_velocity_{k}
+
+        Returns
+        -------
+        mu_k1 : numpy array
+                Mean of the state estimation at {k+1} using the mean, control at time {k}
         '''
         # compute the control input
         dt = self.dt
@@ -73,6 +78,14 @@ class EKF:
     def prediction(self, mu_k, uk, sigma_k):
         '''
         Estimate the state using the dynamics
+
+        Returns
+        -------
+        mu_k1 : numpy array
+                Mean of the state estimation at {k+1} using the mean, control at time {k}
+        sigma_k1 : numpy array
+                   Covariance of the state estimation at {k+1} using the covariance, 
+                   state jacobian at time {k}, process noise covariance
         '''
 
         # compute the jacobian based on the motion model
@@ -95,6 +108,12 @@ class EKF:
         z_{k+1} = C * x_{k+1}  i.e. extract (x, y, yaw) from the state. Since in this case, we just
         need to extract the (x, y, yaw), we just need linear observation model. For other nature of
         observations, non-linear observation model might be needed.
+
+        Returns
+        -------
+        z_k1_hat : numpy array
+                   Estimate of observation at {k+1} using the mean estimated at time {k+1}
+
         '''
         self.C = np.array([[1.0, 0.0, 0.0, 0.0],
                            [0.0, 1.0, 0.0, 0.0],
@@ -107,6 +126,14 @@ class EKF:
     def update(self, timestamp):
         '''
         Update the mean and covaraince using the observation at time {k+1}
+
+        Returns
+        -------
+        mu_k1 : numpy array
+                Mean of the state estimation at {k+1} using the state estimate, true observation at {k+1}
+        sigma_k1 : numpy array
+                   Covariance of the state estimation at {k+1} using the state estimate, 
+                   true observation at {k+1}
         '''
         z_k1_true = self.observations[timestamp]
         z_k1_hat = self.measurement_model()
