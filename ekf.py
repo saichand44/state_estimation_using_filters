@@ -98,7 +98,7 @@ class EKF:
         '''
         self.C = np.array([[1.0, 0.0, 0.0, 0.0],
                            [0.0, 1.0, 0.0, 0.0],
-                           [1.0, 0.0, 1.0, 0.0]])
+                           [0.0, 0.0, 1.0, 0.0]])
         
         z_k1_hat = self.C @ self.mu_k1
 
@@ -127,7 +127,7 @@ class EKF:
         '''
         mu_k, sigma_k = self.mu_k, self.sigma_k   # initial estimate of mean, covariance
 
-        for i in range(2): #self.num_data-1
+        for i in range(self.num_data-1): #self.num_data-1
             uk = self.get_control(i)                # get the control input
             self.prediction(mu_k, uk, sigma_k)      # estimate the state
             mu_k, sigma_k = self.update(i+1)        # update the filter using observation
@@ -139,7 +139,7 @@ class EKF:
 
 if __name__ == '__main__':
     # load the data
-    dataset = 1
+    dataset = 0
     odom_data = np.load('dataset/' + 'poses_world_{:02d}.npz'.format(dataset))
     poses_world = odom_data['poses_world']
 
@@ -147,21 +147,48 @@ if __name__ == '__main__':
     mean, cov = ekf.run_ekf()
 
     # plot the ground truths and ekf
-    fig = plt.figure(figsize=(6,6))
-    ax = fig.add_subplot(111)
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 12))
+
+    # Plot the x coordinate
+    ax1.plot(poses_world[:, 0], label='Ground Truth')
+    ax1.plot(mean[:, 0].flatten(), label='EKF')
+    ax1.set_xlabel('No. of observations')
+    ax1.set_ylabel('x')
+    ax1.legend()
+
+    # Plot the y coordinate
+    ax2.plot(poses_world[:, 1], label='Ground Truth')
+    ax2.plot(mean[:, 1].flatten(), label='EKF')
+    ax2.set_xlabel('No. of observations')
+    ax2.set_ylabel('y')
+    ax2.legend()
+
+    # Plot the yaw angle
+    ax3.plot(poses_world[:, 2], label='Ground Truth')
+    ax3.plot(mean[:, 2].flatten(), label='EKF')
+    ax3.set_xlabel('No. of observations')
+    ax3.set_ylabel('yaw angle (radians)')
+    ax3.legend()
+
+    # plot the entire odometry (x, y, yaw angle)
     length = 0.1
+    for i, ((x_true, y_true, yaw_true), (x_ekf, y_ekf, yaw_ekf)) in enumerate(zip(poses_world, mean[:, :3]),1):
 
-    # # Plot arrows
-    # for i, (x, y, yaw) in enumerate(poses_world):
-    #     dx = length * np.cos(yaw)  # Calculate arrow delta x
-    #     dy = length * np.sin(yaw)  # Calculate arrow delta y
-    #     ax.quiver(x, y, dx, dy, angles='xy', scale_units='xy', scale=0.1, width=0.005, headwidth=5, color='red')
+        # true poses
+        dx_true = length * np.cos(yaw_true)  # Calculate arrow delta x
+        dy_true = length * np.sin(yaw_true)  # Calculate arrow delta y
+        ax4.quiver(x_true, y_true, dx_true, dy_true, angles='xy', scale_units='xy', 
+                   scale=0.1, width=0.005, headwidth=5, color='red')
 
-    # ax.plot(mean[:, 0], mean[:, 1])
-    # ax.plot(poses_world[:, 0], poses_world[:, 1])
-    ax.plot(poses_world[:2, 1], label='Poses World')
-    ax.plot(mean[:2, 1], label='EKF')
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.legend()
+        # ekf poses
+        dx_ekf = length * np.cos(yaw_ekf)  # Calculate arrow delta x
+        dy_ekf = length * np.sin(yaw_ekf)  # Calculate arrow delta y
+        ax4.quiver(x_ekf, y_ekf, dx_ekf, dy_ekf, angles='xy', scale_units='xy', 
+                   scale=0.1, width=0.005, headwidth=5, color='blue')
+
+    ax4.set_title('Odometry Plot')
+    ax4.set_xlabel('x')
+    ax4.set_ylabel('y')
+    ax4.legend(['Ground Truth', 'EKF'])
+
     plt.show()
