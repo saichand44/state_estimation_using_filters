@@ -166,7 +166,7 @@ class EKF:
 
 if __name__ == '__main__':
     # load the data
-    dataset = 0
+    dataset = 1
     odom_data = np.load('dataset/' + 'poses_world_{:02d}.npz'.format(dataset))
     poses_world = odom_data['poses_world']
 
@@ -217,5 +217,8 @@ if __name__ == '__main__':
     ax4.set_xlabel('x')
     ax4.set_ylabel('y')
     ax4.legend(['Ground Truth', 'EKF'])
+
+    # save the plot as an image file
+    plt.savefig('ekf_results/' + 'ekf_odom_{:02d}.png'.format(dataset))
 
     plt.show()
